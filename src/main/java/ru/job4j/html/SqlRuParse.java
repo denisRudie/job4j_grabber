@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -39,15 +41,24 @@ public class SqlRuParse {
     public static void main(String[] args) throws Exception {
         SqlRuParse parser = new SqlRuParse();
 
-        Document doc = Jsoup.connect("https://www.sql.ru/forum/job-offers").get();
-        Elements row = doc.select(".postslisttopic");
-        for (Element td : row) {
-            Element href = td.child(0);
-            System.out.println(href.attr("href"));
-            System.out.println(href.text());
-            Element date = td.parent().child(5);
-            System.out.println(parser.getDate(date.text()));
+        String url = "https://www.sql.ru/forum/job-offers/";
+        ArrayList<Elements> elements = new ArrayList<>();
+        for (int i = 1; i < 6; i++) {
+            StringBuilder sb = new StringBuilder().append(url).append(i);
+            Document doc = Jsoup.connect(sb.toString()).get();
+            Elements row = doc.select(".postslisttopic");
+            elements.add(row);
         }
+
+        elements.stream()
+                .flatMap(Collection::stream)
+                .forEach(e -> {
+                    Element href = e.child(0);
+                    System.out.println(href.attr("href"));
+                    System.out.println(href.text());
+                    Element date = e.parent().child(5);
+                    System.out.println(parser.getDate(date.text()));
+                });
     }
 
     /**
