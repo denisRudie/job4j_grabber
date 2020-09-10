@@ -16,28 +16,10 @@ import java.util.concurrent.TimeUnit;
 
 public class SqlRuParse {
     private static final Logger LOG = LoggerFactory.getLogger(SqlRuParse.class);
+    private DateFormatSymbols dfs;
 
-    public static void main(String[] args) throws Exception {
-        Document doc = Jsoup.connect("https://www.sql.ru/forum/job-offers").get();
-        Elements row = doc.select(".postslisttopic");
-        for (Element td : row) {
-            Element href = td.child(0);
-            System.out.println(href.attr("href"));
-            System.out.println(href.text());
-            Element date = td.parent().child(5);
-            System.out.println(getDate(date.text()));
-        }
-    }
-
-    /**
-     * Converts custom date format to Java Date format.
-     *
-     * @param date custom date format.
-     * @return converted Date.
-     */
-    public static Date getDate(String date) {
-        Date rsl = null;
-        DateFormatSymbols dfs = new DateFormatSymbols(new Locale("ru"));
+    public SqlRuParse() {
+        dfs = new DateFormatSymbols(new Locale("ru"));
         dfs.setMonths(new String[] {
                 "янв",
                 "фев",
@@ -52,12 +34,37 @@ public class SqlRuParse {
                 "ноя",
                 "дек"
         });
-        SimpleDateFormat sdfToday = new SimpleDateFormat("d MMMMM yy", dfs);
+    }
+
+    public static void main(String[] args) throws Exception {
+        SqlRuParse parser = new SqlRuParse();
+
+        Document doc = Jsoup.connect("https://www.sql.ru/forum/job-offers").get();
+        Elements row = doc.select(".postslisttopic");
+        for (Element td : row) {
+            Element href = td.child(0);
+            System.out.println(href.attr("href"));
+            System.out.println(href.text());
+            Element date = td.parent().child(5);
+            System.out.println(parser.getDate(date.text()));
+        }
+    }
+
+    /**
+     * Converts custom date format to Java Date format.
+     *
+     * @param date custom date format.
+     * @return converted Date.
+     */
+    public Date getDate(String date) {
+        Date rsl = null;
 
         if (date.contains("сегодня")) {
+            SimpleDateFormat sdfToday = new SimpleDateFormat("d MMMMM yy", dfs);
             String formattedDate = sdfToday.format(new Date());
             date = date.replaceFirst("сегодня", formattedDate);
         } else if (date.contains("вчера")) {
+            SimpleDateFormat sdfToday = new SimpleDateFormat("d MMMMM yy", dfs);
             String formattedDate = sdfToday
                     .format(new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1)));
             date = date.replaceFirst("вчера", formattedDate);
