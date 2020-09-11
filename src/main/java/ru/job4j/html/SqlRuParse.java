@@ -6,19 +6,18 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.job4j.utils.DateUtils;
 
 import java.text.DateFormatSymbols;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 public class SqlRuParse {
     private static final Logger LOG = LoggerFactory.getLogger(SqlRuParse.class);
     private DateFormatSymbols dfs;
+    private SimpleDateFormat sdf;
 
     public SqlRuParse() {
         dfs = new DateFormatSymbols(new Locale("ru"));
@@ -36,6 +35,7 @@ public class SqlRuParse {
                 "ноя",
                 "дек"
         });
+        sdf = new SimpleDateFormat("d MMMMM yy, hh:mm", dfs);
     }
 
     public static void main(String[] args) throws Exception {
@@ -57,36 +57,7 @@ public class SqlRuParse {
                     System.out.println(href.attr("href"));
                     System.out.println(href.text());
                     Element date = e.parent().child(5);
-                    System.out.println(parser.getDate(date.text()));
+                    System.out.println(DateUtils.getDate(date.text(), parser.dfs, parser.sdf));
                 });
-    }
-
-    /**
-     * Converts custom date format to Java Date format.
-     *
-     * @param date custom date format.
-     * @return converted Date.
-     */
-    public Date getDate(String date) {
-        Date rsl = null;
-
-        if (date.contains("сегодня")) {
-            SimpleDateFormat sdfToday = new SimpleDateFormat("d MMMMM yy", dfs);
-            String formattedDate = sdfToday.format(new Date());
-            date = date.replaceFirst("сегодня", formattedDate);
-        } else if (date.contains("вчера")) {
-            SimpleDateFormat sdfToday = new SimpleDateFormat("d MMMMM yy", dfs);
-            String formattedDate = sdfToday
-                    .format(new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1)));
-            date = date.replaceFirst("вчера", formattedDate);
-        }
-
-        SimpleDateFormat sdf = new SimpleDateFormat("d MMMMM yy, hh:mm", dfs);
-        try {
-            rsl = sdf.parse(date);
-        } catch (ParseException e) {
-            LOG.error(e.getMessage(), e);
-        }
-        return rsl;
     }
 }
