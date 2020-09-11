@@ -6,6 +6,8 @@ public class Post {
     private String name;
     private String link;
     private String author;
+    private String message;
+    private Date createDate;
     private int answersCount;
     private int viewsCount;
     private Date lastMessageDate;
@@ -13,12 +15,16 @@ public class Post {
     public Post(String name,
                 String link,
                 String author,
+                String message,
+                Date createDate,
                 int answersCount,
                 int viewsCount,
                 Date lastMessageDate) {
         this.name = name;
         this.link = link;
         this.author = author;
+        this.message = message;
+        this.createDate = createDate;
         this.answersCount = answersCount;
         this.viewsCount = viewsCount;
         this.lastMessageDate = lastMessageDate;
@@ -70,5 +76,21 @@ public class Post {
 
     public void setLastMessageDate(Date lastMessageDate) {
         this.lastMessageDate = lastMessageDate;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public Date getCreateDate() {
+        return createDate;
+    }
+
+    public void setCreateDate(Date createDate) {
+        this.createDate = createDate;
     }
 }
