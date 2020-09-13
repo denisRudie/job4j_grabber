@@ -12,17 +12,18 @@ import java.io.IOException;
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
-public class SqlRuParse {
+public class SqlRuParse implements Parse {
     private static final Logger LOG = LoggerFactory.getLogger(SqlRuParse.class);
     private DateFormatSymbols dfs;
     private SimpleDateFormat sdf;
 
     public SqlRuParse() {
         dfs = new DateFormatSymbols(new Locale("ru"));
-        dfs.setMonths(new String[] {
+        dfs.setMonths(new String[]{
                 "янв",
                 "фев",
                 "мар",
@@ -39,69 +40,65 @@ public class SqlRuParse {
         sdf = new SimpleDateFormat("d MMMMM yy, hh:mm", dfs);
     }
 
-    public static void main(String[] args) {
-        SqlRuParse parser = new SqlRuParse();
-
-        String url = "https://www.sql.ru/forum/job-offers/";
-        ArrayList<Elements> elements = new ArrayList<>();
-        for (int i = 1; i < 6; i++) {
-            StringBuilder sb = new StringBuilder().append(url).append(i);
-            try {
-                Document doc = Jsoup.connect(sb.toString()).get();
-                Elements row = doc.select(".postslisttopic");
-                elements.add(row);
-            } catch (IOException e) {
-                LOG.error(e.getMessage(), e);
-            }
-        }
-
-        elements.stream()
-                .flatMap(Collection::stream)
-                .forEach(e -> {
-                    Element href = e.child(0);
-                    System.out.println(href.attr("href"));
-                    System.out.println(href.text());
-                    Element date = e.parent().child(5);
-                    System.out.println(DateUtils.getDate(date.text(), parser.dfs, parser.sdf));
-                });
-    }
-
     /**
-     * Method parses html page for getting post message.
+     * Method parses html page with vacancies.
+     * Getting general info about post from page with vacancies.
+     * For getting detail info calls detail() method.
      *
-     * @param link url of page with post.
-     * @return message from post.
+     * @param link page with vacancies.
+     * @return list of posts on page.
      */
-    public String getMsg(String link) {
-        String msg = "";
+    @Override
+    public List<Post> list(String link) {
+        List<Post> list = new ArrayList<>();
         try {
             Document doc = Jsoup.connect(link).get();
-            Element row =
-                    doc.getElementsByClass("msgTable").get(0).getElementsByClass("msgBody").get(1);
-            msg = row.text();
+            Elements row = doc.select(".postslisttopic");
+            row.forEach(e -> {
+                String postLink = e.child(0).attr("href");
+                Post p = detail(postLink);
+                p.setName(e.child(0).text());
+                p.setAuthor(e.parent().getElementsByClass("altCol").get(0).text());
+                p.setAnswersCount(Integer.parseInt(e.parent().child(3).text()));
+                p.setViewsCount(Integer.parseInt(e.parent().child(4).text()));
+                p.setLastMessageDate(DateUtils.getDate(e.parent().child(5).text(), dfs, sdf));
+                list.add(p);
+            });
         } catch (IOException e) {
             LOG.error(e.getMessage(), e);
         }
-        return msg;
+        return list;
     }
 
     /**
-     * Method parses html page for getting post creation date.
+     * Method parses post.
      *
-     * @param link url of page with post.
-     * @return creation date of post.
+     * @param link post link.
+     * @return Post with link, message and createDate.
      */
-    public String getCreateDate(String link) {
-        String date = "";
-        try {
+    @Override
+    public Post detail(String link) {
+        String postMessage = "";
+        Date createDate = null;
+
+        try  {
             Document doc = Jsoup.connect(link).get();
-            Element row =
-                    doc.getElementsByClass("msgFooter").get(0);
-            String footer = row.text();
-            date = footer.substring(0, footer.indexOf("[") - 1);
+            Element row = doc.getElementsByClass("msgTable").first();
+            postMessage = row.getElementsByClass("msgBody").get(1).text();
+            String footer = row.getElementsByClass("msgFooter").first().text();
+            createDate = DateUtils.getDate(footer.substring(0, footer.indexOf("[") - 1), dfs, sdf);
         } catch (IOException e) {
             LOG.error(e.getMessage(), e);
         }
-        return date;
+
+        return new Post(
+                "",
+                link,
+                "",
+                postMessage,
+                createDate,
+                -1,
+                -1,
+                null);
     }
 }
