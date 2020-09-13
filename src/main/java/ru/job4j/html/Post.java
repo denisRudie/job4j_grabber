@@ -1,6 +1,7 @@
 package ru.job4j.html;
 
 import java.util.Date;
+import java.util.Objects;
 
 public class Post {
     private String name;
@@ -92,5 +93,18 @@ public class Post {
 
     public void setCreateDate(Date createDate) {
         this.createDate = createDate;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Post post = (Post) o;
+        return link.equals(post.link);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(link);
     }
 }
