@@ -8,4 +8,8 @@ public interface Store {
     List<Post> getAll();
 
     Post findById(String id);
+
+    void delete();
+
+    void log();
 }

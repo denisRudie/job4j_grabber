@@ -11,16 +11,20 @@ import ru.job4j.utils.DateUtils;
 import java.io.IOException;
 import java.text.DateFormatSymbols;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
+/**
+ * Parser for sql.ru jobs page.
+ */
 public class SqlRuParse implements Parse {
     private static final Logger LOG = LoggerFactory.getLogger(SqlRuParse.class);
     private DateFormatSymbols dfs;
     private SimpleDateFormat sdf;
 
+    /**
+     * Constructor creates custom months names for parsing Data from sql.ru.
+     * Also creates Date format like sql.ru Date format.
+     */
     public SqlRuParse() {
         dfs = new DateFormatSymbols(new Locale("ru"));
         dfs.setMonths(new String[]{
@@ -42,47 +46,63 @@ public class SqlRuParse implements Parse {
 
     /**
      * Method parses html page with vacancies.
-     * Getting general info about post from page with vacancies.
-     * For getting detail info calls detail() method.
+     * Getting general info about post.
+     * Detail info could be requested from detail() method.
      *
      * @param link page with vacancies.
-     * @return list of posts on page.
+     * @return list of posts on page. Each post doesn't contain message and create date.
      */
     @Override
     public List<Post> list(String link) {
-        List<Post> list = new ArrayList<>();
+        List<Post> javaVacancies = new ArrayList<>();
+        List<Elements> elementsList = new ArrayList<>();
         try {
-            Document doc = Jsoup.connect(link).get();
-            Elements row = doc.select(".postslisttopic");
-            row.forEach(e -> {
-                String postLink = e.child(0).attr("href");
-                Post p = detail(postLink);
-                p.setName(e.child(0).text());
-                p.setAuthor(e.parent().getElementsByClass("altCol").get(0).text());
-                p.setAnswersCount(Integer.parseInt(e.parent().child(3).text()));
-                p.setViewsCount(Integer.parseInt(e.parent().child(4).text()));
-                p.setLastMessageDate(DateUtils.getDate(e.parent().child(5).text(), dfs, sdf));
-                list.add(p);
-            });
+            int pageCounter = getPageCounter(link);
+            for (int i = 1; i <= pageCounter; i++) {
+                StringBuilder sb = new StringBuilder().append(link).append("/").append(i);
+                Document page = Jsoup.connect(sb.toString()).get();
+                Elements vacanciesOnPage = page.select(".postslisttopic");
+                elementsList.add(vacanciesOnPage);
+            }
+
+            elementsList.stream()
+                    .flatMap(Collection::stream)
+                    .forEach(e -> {
+                        String postLink = e.child(0).attr("href");
+                        String name = e.child(0).text();
+                        if (name.toLowerCase().contains("java")) {
+                            Post p = new Post(
+                                    name,
+                                    postLink,
+                                    e.parent().getElementsByClass("altCol").get(0).text(),
+                                    "",
+                                    null,
+                                    Integer.parseInt(e.parent().child(3).text()),
+                                    Integer.parseInt(e.parent().child(4).text()),
+                                    DateUtils.getDate(
+                                            e.parent().child(5).text(), dfs, sdf));
+                            javaVacancies.add(p);
+                        }
+                    });
         } catch (IOException e) {
             LOG.error(e.getMessage(), e);
         }
-        return list;
+        return javaVacancies;
     }
 
     /**
-     * Method parses post.
+     * Method goes inside the post and add message and createDate.
      *
-     * @param link post link.
-     * @return Post with link, message and createDate.
+     * @param post without details.
+     * @return post with details.
      */
     @Override
-    public Post detail(String link) {
+    public Post detail(Post post) {
         String postMessage = "";
         Date createDate = null;
 
-        try  {
-            Document doc = Jsoup.connect(link).get();
+        try {
+            Document doc = Jsoup.connect(post.getLink()).get();
             Element row = doc.getElementsByClass("msgTable").first();
             postMessage = row.getElementsByClass("msgBody").get(1).text();
             String footer = row.getElementsByClass("msgFooter").first().text();
@@ -91,14 +111,32 @@ public class SqlRuParse implements Parse {
             LOG.error(e.getMessage(), e);
         }
 
-        return new Post(
-                "",
-                link,
-                "",
-                postMessage,
-                createDate,
-                -1,
-                -1,
-                null);
+        post.setMessage(postMessage);
+        post.setCreateDate(createDate);
+        return post;
+    }
+
+    /**
+     * Method parses page with vacancies for count of pages.
+     *
+     * @param link page with vacancies.
+     * @return count of pages.
+     */
+    private int getPageCounter(String link) {
+        int count = -1;
+        try {
+            Document doc = Jsoup.connect(link).get();
+            count = Integer.parseInt(
+                    doc.getElementsByClass("sort_options")
+                            .get(1)
+                            .getElementsByTag("td")
+                            .first()
+                            .children()
+                            .last()
+                            .text());
+        } catch (IOException e) {
+            LOG.error(e.getMessage(), e);
+        }
+        return count;
     }
 }
