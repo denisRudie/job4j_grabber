@@ -107,4 +107,13 @@ public class Post {
     public int hashCode() {
         return Objects.hash(link);
     }
+
+    @Override
+    public String toString() {
+        return "Post{" +
+                "name='" + name + '\'' +
+                ", author='" + author + '\'' +
+                ", createDate=" + createDate +
+                '}';
+    }
 }
