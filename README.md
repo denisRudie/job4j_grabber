@@ -1,4 +1,23 @@
-[![Build Status](https://travis-ci.com/denisRudie/job4j_design.svg?branch=master)](https://travis-ci.com/denisRudie/job4j_grabber)
-[![codecov](https://codecov.io/gh/denisRudie/job4j_design/branch/master/graph/badge.svg)](https://codecov.io/gh/denisRudie/job4j_grabber)
+### Парсер вакансий
 
-<h2>Проект граббер вакансий</h2>
+[![Build Status](https://travis-ci.com/denisRudie/job4j_grabber.svg?branch=master)](https://travis-ci.com/denisRudie/job4j_grabber)
+
+#### О проекте
+Парсер вакансий для сайта https://www.sql.ru/forum/job. Используется для поиска топиков с вакансиями, содержащих в названии ключевое слово Java, парсинга и сохранения найденных топиков в БД Postgres.
+##### Возможности: 
+* обновление данных по расписанию;
+* проверка и удаление из БД, вакансий удаленных на сайте;
+* логгирование выполненных действий: количество удалений, добавлений и апдейтов;
+* если запись уже есть в бд - для нее будет выполнен принудительный апдейт кол-ва просмотров, кол-ва сообщений и даты последнего сообщения;
+##### Настройки:
+Интервалы обновления, адрес для парсинга, данные для подключения к БД - устанавливаются в конфигурационном файле - rabbit.properties. 
+##### Производительность: 
+Парсинг 700 страниц форума (~ 35,000 топиков) и запись их в БД - занимает ~120 сек.
+
+### Technologies
+* Java Core
+* quartz-scheduler
+* jsoup
+* log4j/slf4j
+* jdbc (Postgres)
+* Maven
